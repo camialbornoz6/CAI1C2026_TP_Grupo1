@@ -1,8 +1,11 @@
-﻿namespace Products.API.DTOs;
+namespace Products.API.DTOs;
 
+/// <summary>
+/// Producto devuelto por Products.API.
+/// </summary>
 public class RespuestaProducto
 {
-    public string Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     public string Nombre { get; set; } = string.Empty;
 

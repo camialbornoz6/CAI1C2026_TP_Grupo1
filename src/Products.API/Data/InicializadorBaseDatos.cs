@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Data.Sqlite;
 
 namespace Products.API.Data;
@@ -6,10 +6,14 @@ namespace Products.API.Data;
 public class InicializadorBaseDatos
 {
     private readonly IConfiguration _configuracion;
+    private readonly ILogger<InicializadorBaseDatos> _logger;
 
-    public InicializadorBaseDatos(IConfiguration configuracion)
+    public InicializadorBaseDatos(
+        IConfiguration configuracion,
+        ILogger<InicializadorBaseDatos> logger)
     {
         _configuracion = configuracion;
+        _logger = logger;
     }
 
     public void Inicializar()
@@ -21,7 +25,6 @@ public class InicializadorBaseDatos
 
         conexion.Open();
 
-        // Crea la tabla si todavía no existe.
         conexion.Execute("""
             CREATE TABLE IF NOT EXISTS productos (
                 id TEXT PRIMARY KEY,
@@ -34,7 +37,15 @@ public class InicializadorBaseDatos
             );
         """);
 
-        // Carga inicial mínima para poder probar un GET sin tener que hacer antes un POST.
+        // Tabla minima para simular el bloqueo de borrado por ordenes activas
+        // mientras Orders.API todavia no esta integrada.
+        conexion.Execute("""
+            CREATE TABLE IF NOT EXISTS ordenes_activas_productos (
+                producto_id TEXT NOT NULL,
+                estado TEXT NOT NULL
+            );
+        """);
+
         int cantidadProductos = conexion.ExecuteScalar<int>("SELECT COUNT(1) FROM productos;");
 
         if (cantidadProductos == 0)
@@ -81,5 +92,17 @@ public class InicializadorBaseDatos
                 );
             """);
         }
+
+        int cantidadOrdenesSimuladas = conexion.ExecuteScalar<int>("SELECT COUNT(1) FROM ordenes_activas_productos;");
+
+        if (cantidadOrdenesSimuladas == 0)
+        {
+            conexion.Execute("""
+                INSERT INTO ordenes_activas_productos (producto_id, estado)
+                VALUES ('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Pendiente');
+            """);
+        }
+
+        _logger.LogInformation("Base SQLite inicializada correctamente.");
     }
 }

@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using Products.API.Models;
 
@@ -21,7 +21,7 @@ public class ProductoRepositorio : IProductoRepositorio
         return new SqliteConnection(cadenaConexion);
     }
 
-    public IEnumerable<Producto> ObtenerTodos()
+    public IEnumerable<Producto> ObtenerTodos(string? categoria, string? nombre)
     {
         using var conexion = CrearConexion();
 
@@ -35,10 +35,16 @@ public class ProductoRepositorio : IProductoRepositorio
                 categoria AS Categoria,
                 fecha_creacion AS FechaCreacion
             FROM productos
+            WHERE (@Categoria IS NULL OR lower(categoria) = lower(@Categoria))
+              AND (@Nombre IS NULL OR lower(nombre) LIKE '%' || lower(@Nombre) || '%')
             ORDER BY nombre;
         """;
 
-        return conexion.Query<Producto>(consulta);
+        return conexion.Query<Producto>(consulta, new
+        {
+            Categoria = string.IsNullOrWhiteSpace(categoria) ? null : categoria.Trim(),
+            Nombre = string.IsNullOrWhiteSpace(nombre) ? null : nombre.Trim()
+        });
     }
 
     public Producto? ObtenerPorId(string id)
@@ -77,8 +83,30 @@ public class ProductoRepositorio : IProductoRepositorio
 
         int cantidad = conexion.ExecuteScalar<int>(consulta, new
         {
-            Nombre = nombre,
-            Categoria = categoria
+            Nombre = nombre.Trim(),
+            Categoria = categoria.Trim()
+        });
+
+        return cantidad > 0;
+    }
+
+    public bool ExisteProductoConNombreYCategoriaExcluyendoId(string id, string nombre, string categoria)
+    {
+        using var conexion = CrearConexion();
+
+        string consulta = """
+            SELECT COUNT(1)
+            FROM productos
+            WHERE id <> @Id
+              AND lower(nombre) = lower(@Nombre)
+              AND lower(categoria) = lower(@Categoria);
+        """;
+
+        int cantidad = conexion.ExecuteScalar<int>(consulta, new
+        {
+            Id = id,
+            Nombre = nombre.Trim(),
+            Categoria = categoria.Trim()
         });
 
         return cantidad > 0;
@@ -119,5 +147,59 @@ public class ProductoRepositorio : IProductoRepositorio
             producto.Categoria,
             FechaCreacion = producto.FechaCreacion.ToString("O")
         });
+    }
+
+    public void Actualizar(Producto producto)
+    {
+        using var conexion = CrearConexion();
+
+        string sentencia = """
+            UPDATE productos
+            SET nombre = @Nombre,
+                descripcion = @Descripcion,
+                precio = @Precio,
+                stock = @Stock,
+                categoria = @Categoria
+            WHERE id = @Id;
+        """;
+
+        conexion.Execute(sentencia, new
+        {
+            producto.Id,
+            producto.Nombre,
+            producto.Descripcion,
+            producto.Precio,
+            producto.Stock,
+            producto.Categoria
+        });
+    }
+
+    public void Eliminar(string id)
+    {
+        using var conexion = CrearConexion();
+
+        conexion.Execute("DELETE FROM productos WHERE id = @Id;", new
+        {
+            Id = id
+        });
+    }
+
+    public bool TieneOrdenesActivas(string id)
+    {
+        using var conexion = CrearConexion();
+
+        string consulta = """
+            SELECT COUNT(1)
+            FROM ordenes_activas_productos
+            WHERE producto_id = @Id
+              AND estado IN ('Pendiente', 'Confirmada');
+        """;
+
+        int cantidad = conexion.ExecuteScalar<int>(consulta, new
+        {
+            Id = id
+        });
+
+        return cantidad > 0;
     }
 }

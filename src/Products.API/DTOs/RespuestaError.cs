@@ -1,0 +1,23 @@
+namespace Products.API.DTOs;
+
+/// <summary>
+/// Respuesta estandar para errores 4xx y 5xx.
+/// </summary>
+public class RespuestaError
+{
+    public string Type { get; set; } = string.Empty;
+
+    public string Title { get; set; } = string.Empty;
+
+    public int Status { get; set; }
+
+    public string Detail { get; set; } = string.Empty;
+
+    public string Instance { get; set; } = string.Empty;
+
+    public string ErrorCode { get; set; } = string.Empty;
+
+    public string ErrorMessage { get; set; } = string.Empty;
+
+    public string CorrelationId { get; set; } = string.Empty;
+}

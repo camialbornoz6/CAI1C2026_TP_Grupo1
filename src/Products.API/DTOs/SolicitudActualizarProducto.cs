@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 namespace Products.API.DTOs;
 
 /// <summary>
-/// Datos necesarios para crear un producto.
+/// Datos necesarios para actualizar un producto existente.
 /// </summary>
-public class SolicitudCrearProducto
+public class SolicitudActualizarProducto
 {
     [Required(ErrorMessage = "El nombre del producto es obligatorio.")]
     [StringLength(100, ErrorMessage = "El nombre no puede superar los 100 caracteres.")]

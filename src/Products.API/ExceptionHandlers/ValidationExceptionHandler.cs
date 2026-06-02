@@ -3,11 +3,11 @@ using Products.API.Exceptions;
 
 namespace Products.API.ExceptionHandlers;
 
-public class NotFoundExceptionHandler : IExceptionHandler
+public class ValidationExceptionHandler : IExceptionHandler
 {
-    private readonly ILogger<NotFoundExceptionHandler> _logger;
+    private readonly ILogger<ValidationExceptionHandler> _logger;
 
-    public NotFoundExceptionHandler(ILogger<NotFoundExceptionHandler> logger)
+    public ValidationExceptionHandler(ILogger<ValidationExceptionHandler> logger)
     {
         _logger = logger;
     }
@@ -17,23 +17,23 @@ public class NotFoundExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (exception is not NotFoundException ex)
+        if (exception is not ValidationException ex)
         {
             return false;
         }
 
-        _logger.LogWarning("Recurso no encontrado. ErrorCode: {ErrorCode}. Path: {Path}",
+        _logger.LogWarning("Datos invalidos. ErrorCode: {ErrorCode}. Path: {Path}",
             ex.ErrorCode,
             context.Request.Path.Value);
 
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
 
         var respuesta = ExceptionHandlerHelper.CrearRespuestaError(
             context,
-            StatusCodes.Status404NotFound,
-            "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-            "Not Found",
-            "El recurso solicitado no fue encontrado.",
+            StatusCodes.Status400BadRequest,
+            "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+            "Bad Request",
+            "Los datos del producto son invalidos.",
             ex.ErrorCode,
             ex.Message);
 
